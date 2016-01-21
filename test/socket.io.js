@@ -843,6 +843,44 @@ describe('socket.io', function(){
         });
       });
     });
+
+    it('should return proper rooms as an object', function(){
+      var srv = http();
+      var sio = io(srv);
+      srv.listen(function(){
+
+        var c1 = client(srv, '/');
+        var c2 = client(srv, '/');
+        sio.on('connection', function(s){
+          s.join('foo');
+          s.join('bar', function(){
+            var rooms = sio.nsps['/'].get('rooms');
+            expect(Object.keys(rooms).length).to.be(2);
+            expect(Object.keys(rooms)).to.eql(['foo', 'bar']);
+          });
+        });
+      });
+    });
+
+    it('should return proper rooms from only the namespace specified', function(){
+      var srv = http();
+      var sio = io(srv);
+      srv.listen(function(){
+        var c1 = client(srv, '/this');
+        var c2 = client(srv, '/that');
+        sio.of('/this').on('connection', function(s){
+          s.join('foo');
+        });
+        sio.of('/that').on('connection', function(s){
+          s.join('bar', function(){
+            var roomsInThis = sio.nsps['/this'].get('rooms');
+            var roomsInThat = sio.nsps['/that'].get('rooms');
+            expect(Object.keys(roomsInThat)).to.eql(['bar']);
+            expect(Object.keys(roomsInThis)).to.eql(['foo']);
+          });
+        });
+      });
+    });
   });
 
   describe('socket', function(){
